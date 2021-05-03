@@ -20,6 +20,8 @@ import pickle
 import _pickle as cPickle
 import sys
 
+from syntheticGraph import syntheticGraph
+
 class reducedGraph():
     def __init__(self, sythethicGraph, coarse_type = 'baseline', n_supernodes = 3):
       self.graph = sythethicGraph
@@ -84,4 +86,4 @@ class reducedGraph():
     def compute_reduced(self):
       self.edge_index = torch.zeros((self.n_supernodes, self.n_supernodes))
       for edge in self.edges:
-        self.edge_index[edge[0], edge[1]] = torch.sum(graph.adjacency_matrix[self.mapping[edge[0]],:][:,self.mapping[edge[1]]])
+        self.edge_index[edge[0], edge[1]] = torch.sum(self.graph.adjacency_matrix[self.mapping[edge[0]],:][:,self.mapping[edge[1]]])
