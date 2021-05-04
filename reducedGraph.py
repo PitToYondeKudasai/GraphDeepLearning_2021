@@ -31,7 +31,7 @@ class reducedGraph():
       self.edges = []
       coarsening[coarse_type]()
       self.computeProjection()
-      self.compute_reduced() # we compute the reduced edge index weights
+      self.compute_reduced()
 
     def computeProjection(self):
       '''ex metodo'''
@@ -87,3 +87,4 @@ class reducedGraph():
       self.edge_index = torch.zeros((self.n_supernodes, self.n_supernodes))
       for edge in self.edges:
         self.edge_index[edge[0], edge[1]] = torch.sum(self.graph.adjacency_matrix[self.mapping[edge[0]],:][:,self.mapping[edge[1]]])
+        self.edge_index[edge[1], edge[0]] = self.edge_index[edge[0], edge[1]]

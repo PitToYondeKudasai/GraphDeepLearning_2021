@@ -138,14 +138,14 @@ class syntheticGraphDataset():
 
   def computeBatch(graph, node_list, first_mapping, second_mapping, entireMatrix):
     if (entireMatrix):
-      A = graph.adjacency_matrix#.clone()
+      A = graph.adjacency_matrix
       A[node_list,:] = 0
       A[:, node_list] = 0
 
-      X = graph.node_features#.clone()
+      X = graph.node_features
       X[node_list,:] = 0
 
-      E = graph.edge_weights#.clone()
+      E = graph.edge_weights
       E[node_list, :] = 0
       E = torch.sum(E, axis=1)
 
@@ -228,12 +228,13 @@ class syntheticGraphDataset():
       rayleigh_original = ((graph.eigenvectors[:,i].T @ graph.laplacian @ graph.eigenvectors[:,i])/
                             graph.eigenvectors[:,i].T @ graph.eigenvectors[:,i])
       rayleigh_reconstruct = ((P_eig[:,i].T @ L_hat @ P_eig[:,i])/(P_eig[:,i].T @ P_eig[:,i]))
-      loss += torch.abs(rayleigh_original - rayleigh_reconstruct)
+      loss += torch.abs(rayleigh_original - rayleigh_reconstruct)/n_eig
+
     return loss
 
 # Pickle a file and then compress it into a file with extension
 
-  def compressed_pickle(title, data):
+  def export_dataset(title, data):
      with bz2.BZ2File(title , 'w') as f:
       cPickle.dump(data, f)
 
