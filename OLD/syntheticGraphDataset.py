@@ -217,16 +217,28 @@ class syntheticGraphDataset():
     reducedGraph = self.reducedGraphs[graphIndex]
     graph = self.graphs[graphIndex]
     d_hat = torch.diag(torch.sum(w_hat, axis = 1))
+    print("d_hat", d_hat)
     gamma_prime = torch.diag(torch.pow(torch.diag(reducedGraph.Gamma), -0.5))
+    print("gamma prime", gamma_prime)
     L_hat = gamma_prime @ (d_hat - w_hat) @ gamma_prime
+    print("L_hat", L_hat)
     P_italic = gamma_prime @ reducedGraph.P_plus.T
+    print("P_italic", P_italic)
     P_eig = P_italic @ graph.eigenvectors
+    print("P_eig", P_eig)
     loss = 0
+    print("loss prima del for loop: ", loss)
     for i in range(n_eig):
       rayleigh_original = ((graph.eigenvectors[:,i].T @ graph.laplacian @ graph.eigenvectors[:,i])/
                             (graph.eigenvectors[:,i].T @ graph.eigenvectors[:,i]))
       rayleigh_reconstruct = ((P_eig[:,i].T @ L_hat @ P_eig[:,i])/(P_eig[:,i].T @ P_eig[:,i]))
+      print("rayleigh_original : ", rayleigh_original)
+      print("rayleigh_reconstruct : ", rayleigh_reconstruct)
+      print("differenza ", torch.abs(rayleigh_original - rayleigh_reconstruct ))
+      print("differenza / eig", torch.abs(rayleigh_original - rayleigh_reconstruct )/ n_eig)
       loss += torch.abs(rayleigh_original - rayleigh_reconstruct)/n_eig
+      print("loss DOPO dentro for loop: ", loss)
+    print("loss DOPO del for loop: ", loss)
     return loss
 
 # Pickle a file and then compress it into a file with extension
