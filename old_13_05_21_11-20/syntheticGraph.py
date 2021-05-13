@@ -76,7 +76,7 @@ class syntheticGraph():
     def eigen_analysis(matrix):
       ''' Given a matrix, it returns the eigenavlues and aigenvectors sorted in decreasing order '''
       values, vectors = np.linalg.eig(matrix)
-      indices = np.argsort(values)
+      indices = np.argsort(-values)
       values = torch.tensor(values[indices])
       vectors = torch.tensor(vectors[:, indices])
       return values, vectors

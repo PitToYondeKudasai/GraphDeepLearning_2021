@@ -21,6 +21,7 @@ import _pickle as cPickle
 import sys
 
 from GINConv import GINConv
+# from syntheticGraphDataset import syntheticGraphDataset
 
 
 class GNN(torch.nn.Module):
@@ -33,6 +34,7 @@ class GNN(torch.nn.Module):
          for _ in range(n_layers):
                  self.convs.append(GINConv(node_size))
          self.linear = torch.nn.Linear(node_size, 1)
+         torch.nn.init.xavier_uniform_(self.linear.weight)
          self.leak_relu = torch.nn.LeakyReLU()
 
     def forward(self, A, X, E):
