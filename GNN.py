@@ -46,8 +46,8 @@ class GNN(torch.nn.Module):
          X = 1 + self.leak_relu(X) #torch.nn.functional.relu(X)
          return X
 
-    def evaluate(self, dataset, hyperparams, verbose=False):
-        if verbose: print("Evaluation started..")
+    def evaluateRayleighLoss(self, dataset, hyperparams, verbose=False):
+        if verbose: print("Rayleigh evaluation started..")
         with torch.no_grad():
           improvements = []
           dataset.reset_w_hat()
@@ -61,7 +61,27 @@ class GNN(torch.nn.Module):
               out = self(A, X, E)
               dataset.store_w_hat(graph, out, x, y)
             loss = dataset.rayleigh_loss(graph, hyperparams['n_eig'])
-            imp = (dataset.originalGraphsLoss[graph] - loss)/dataset.originalGraphsLoss[graph]
+            imp = (dataset.originalGraphsRayLeighLoss[graph] - loss)/dataset.originalGraphsRayLeighLoss[graph]
             improvements.append(imp)
             if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
         return improvements
+
+    def evaluateEigenError(self, dataset, hyperparams, verbose=False):
+      if verbose: print("Eigenerror valuation started..")
+      with torch.no_grad():
+        improvements = []
+        dataset.reset_w_hat()
+        dataset.resetDispatcher()
+        for graph in dataset.batchesIndices:
+          if verbose: print("Graph ", graph, end=" ")
+          start = time.time()
+          loss = 0
+          for batch in range(dataset.graphNumberBatches(graph, hyperparams['batch_size'])):
+            A, X, E, _, x, y = dataset.getNextBatch(graph, hyperparams['batch_size'])
+            out = self(A, X, E)
+            dataset.store_w_hat(graph, out, x, y)
+          eigenerror = dataset.eigenError(graph, hyperparams['n_eig'])
+          imp = (dataset.originalEigenError[graph] - eigenerror)/dataset.originalEigenError[graph]
+          improvements.append(imp)
+          if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
+      return improvements

@@ -37,7 +37,9 @@ class syntheticGraphDataset():
 
     # Supporting variables to compute the loss
     self.w_hatGraphs = []
-    self.originalGraphsLoss = []
+    self.originalGraphsQuadraticLoss = []
+    self.originalGraphsRayLeighLoss = []
+    self.originalEigenError = []
 
     # Supporting variables for the dispatcher
     self.batchesIndices = []
@@ -123,7 +125,11 @@ class syntheticGraphDataset():
 
     self.w_hatGraphs.append(torch.zeros((reducedGraph.n_supernodes, reducedGraph.n_supernodes)))
     self.w_hatGraphs[graphIndex] = self.reducedGraphs[graphIndex].edge_index
-    self.originalGraphsLoss.append(self.rayleigh_loss(graphIndex, n_eig))
+
+    self.originalGraphsRayLeighLoss.append(self.rayleigh_loss(graphIndex, n_eig))
+    self.originalGraphsQuadraticLoss.append(self.quadratic_loss(graphIndex, n_eig))
+    self.originalEigenError.append(self.eigenError(graphIndex, n_eig))
+
     self.w_hatGraphs[graphIndex] = torch.zeros((reducedGraph.n_supernodes, reducedGraph.n_supernodes))
 
     self.nGraphs += 1
@@ -211,6 +217,30 @@ class syntheticGraphDataset():
       for graph in range(self.nGraphs):
         w_hat[graph] = torch.zeros((reducedGraphs[graph].n_supernodes, reducedGraphs[graph].n_supernodes))
 
+  def eigenError(self, graphIndex, n_eig):
+
+    graph = self.graphs[graphIndex]
+    w_hat = self.w_hatGraphs[graphIndex]
+    reducedGraph = self.reducedGraphs[graphIndex]
+
+    d_hat = torch.diag(torch.sum(w_hat, axis = 1))
+    gamma_prime = torch.diag(torch.pow(torch.diag(reducedGraph.Gamma), -0.5))
+    l_hat = gamma_prime @ (d_hat - w_hat) @ gamma_prime
+    self.eigenvalues = syntheticGraphDataset.eigen_analysis(l_hat)
+    
+    eigenerror = 0
+    for i in range(n_eig):
+      eigenerror += (abs(self.eigenvalues[i] - graph.eigenvalues[i]) / graph.eigenvalues[i])
+
+    return eigenerror/n_eig
+
+  def eigen_analysis(matrix):
+    ''' Given a matrix, it returns the eigenavlues and aigenvectors sorted in decreasing order '''
+    values, _ = np.linalg.eig(matrix)
+    indices = np.argsort(values)
+    values = torch.tensor(values[indices])
+    return values
+
   def rayleigh_loss(self, graphIndex, n_eig):
 
     w_hat = self.w_hatGraphs[graphIndex]
@@ -227,6 +257,23 @@ class syntheticGraphDataset():
                             (graph.eigenvectors[:,i].T @ graph.eigenvectors[:,i]))
       rayleigh_reconstruct = ((P_eig[:,i].T @ L_hat @ P_eig[:,i])/(P_eig[:,i].T @ P_eig[:,i]))
       loss += torch.abs(rayleigh_original - rayleigh_reconstruct)/n_eig
+    return loss
+
+  def quadratic_loss(self, graphIndex, n_eig):
+
+    w_hat = self.w_hatGraphs[graphIndex]
+    reducedGraph = self.reducedGraphs[graphIndex]
+    graph = self.graphs[graphIndex]
+
+    d_hat = torch.diag(torch.sum(w_hat, axis = 1))
+    L_hat = d_hat - w_hat 
+    P_eig = reducedGraph.P @ graph.eigenvectors
+
+    loss = 0
+    for i in range(n_eig):
+      quadratic_original = (graph.eigenvectors[:,i].T @ graph.laplacian @ graph.eigenvectors[:,i])/(graph.eigenvectors[:,i].T @ graph.eigenvectors[:,i])
+      quadratic_reconstruct = (P_eig[:,i].T @ L_hat @ P_eig[:,i])/(P_eig[:,i].T @ P_eig[:,i])
+      loss += torch.abs(quadratic_original - quadratic_reconstruct)/n_eig
     return loss
 
 # Pickle a file and then compress it into a file with extension

@@ -24,14 +24,24 @@ from syntheticGraph import syntheticGraph
 
 class reducedGraph():
     def __init__(self, sythethicGraph, coarse_type = 'baseline', n_supernodes = 3):
-      self.graph = sythethicGraph
-      coarsening = {'baseline': self.baselineReduction, 'custom':self.customReduction}
-      self.n_supernodes = n_supernodes
-      self.n_edges = 0
-      self.edges = []
-      coarsening[coarse_type]()
-      self.computeProjection()
-      self.compute_reduced()
+        self.graph = sythethicGraph
+        coarsening = {'baseline': self.baselineReduction, 'custom':self.customReduction}
+        self.n_supernodes = n_supernodes
+        self.n_edges = 0
+        self.edges = []
+        coarsening[coarse_type]()
+        self.computeProjection()
+        self.compute_reduced()
+        # D = torch.diag(torch.sum(self.edge_index, axis = 1))
+        # laplacian = D - self.edge_index
+        # self.eigenvalues = reducedGraph.eigen_analysis(laplacian)
+
+    # def eigen_analysis(matrix):
+    #   ''' Given a matrix, it returns the eigenavlues and aigenvectors sorted in decreasing order '''
+    #   values, _ = np.linalg.eig(matrix)
+    #   indices = np.argsort(values)
+    #   values = torch.tensor(values[indices])
+    #   return values
 
     def computeProjection(self):
       '''ex metodo'''
