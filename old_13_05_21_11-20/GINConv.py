@@ -24,8 +24,10 @@ class GINConv(torch.nn.Module):
     def __init__(self, node_size):
         super().__init__()
         self.linear1 = torch.nn.Linear(node_size, node_size)
+        torch.nn.init.xavier_uniform_(self.linear1.weight)
         self.leak_relu1 = torch.nn.LeakyReLU()
         self.linear2 = torch.nn.Linear(node_size, node_size)
+        torch.nn.init.xavier_uniform_(self.linear2.weight)
         self.leak_relu2 = torch.nn.LeakyReLU()
 
     def forward(self, A, X, E):
