@@ -8,7 +8,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.data import Data
 from scipy.sparse.csgraph import shortest_path
 from scipy.sparse import csr_matrix
-from torch_geometric.utils.random import erdos_renyi_graph
+from torch_geometric.utils.random import erdos_renyi_graph, barabasi_albert_graph
 import time
 import random
 from math import floor, ceil
@@ -27,7 +27,9 @@ class syntheticGraph():
       self.p = p
       self.name_graph_class = name_graph_class
       self.adjacency_matrix = custom_graph
-      create_graph = {'erdos_renyi_graph': self.erdos_renyi_graph, 'custom_graph':self.custom_graph}
+      create_graph = {'erdos_renyi_graph' : self.erdos_renyi_graph, 
+                      'custom_graph':self.custom_graph, 
+                      'barabasi_albert_graph':self.barabasi_albert_graph}
 
       create_graph[name_graph_class]()
       self.n_nodes = self.adjacency_matrix.shape[0]
@@ -35,6 +37,11 @@ class syntheticGraph():
       self.edge_weights = self.adjacency_matrix
       self.laplacian = torch.diag(torch.sum(self.edge_weights, axis = 1)) - self.edge_weights
       self.eigenvalues, self.eigenvectors = syntheticGraph.eigen_analysis(self.laplacian)
+
+    def barabasi_albert_graph(self):
+      if (self.size == None ):
+        raise Exception('Ehi I need the size to create arabasi-albert graph.')
+      self.adjacency_matrix = torch_geometric.utils.to_dense_adj(barabasi_albert_graph(self.size, 4))[0]
 
     def erdos_renyi_graph(self):
       if (self.p == None or self.size == None ):
