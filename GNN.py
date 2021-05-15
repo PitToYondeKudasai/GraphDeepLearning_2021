@@ -40,7 +40,7 @@ class GNN(torch.nn.Module):
 
         self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
 
-    def export(pathname):
+    def export(self, pathname):
         torch.save(self.state_dict(), pathname)
 
     def forward(self, A, X, E):
@@ -75,7 +75,7 @@ class GNN(torch.nn.Module):
               dataset.store_w_hat(graph, out, x, y)
             loss = dataset.rayleigh_loss(graph, hyperparams['n_eig'])
             imp = (dataset.originalGraphsRayLeighLoss[graph] - loss)/dataset.originalGraphsRayLeighLoss[graph]
-            improvements.append(imp)
+            improvements.append(imp.item())
             if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
         return improvements
 
@@ -95,6 +95,6 @@ class GNN(torch.nn.Module):
             dataset.store_w_hat(graph, out, x, y)
           eigenerror = dataset.eigenError(graph, hyperparams['n_eig'])
           imp = (dataset.originalEigenError[graph] - eigenerror)/dataset.originalEigenError[graph]
-          improvements.append(imp)
+          improvements.append(imp.item())
           if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
       return improvements
