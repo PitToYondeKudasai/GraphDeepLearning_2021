@@ -13,19 +13,24 @@ import time
 import random
 from math import floor, ceil
 from copy import deepcopy
-
+import importlib
 from os import path
 import bz2
 import pickle
 import _pickle as cPickle
 import sys
 
+import graph
+from graph import Node, Graph
 from syntheticGraph import syntheticGraph
 
+importlib.reload(graph)
+from graph import Graph, Node
+
 class reducedGraph():
-    def __init__(self, sythethicGraph, coarse_type = 'baseline', n_supernodes = 3):
-        self.graph = sythethicGraph
-        coarsening = {'baseline': self.baselineReduction, 'custom':self.customReduction}
+    def __init__(self, originalGraph, coarse_type = 'baseline', n_supernodes = 3):
+        self.graph = originalGraph
+        coarsening = {'baseline': self.baselineReduction, 'custom':self.customReduction, 'hem':self.heavyEdgeReduction}
         self.n_supernodes = n_supernodes
         self.n_edges = 0
         self.edges = []
@@ -42,6 +47,34 @@ class reducedGraph():
     #   indices = np.argsort(values)
     #   values = torch.tensor(values[indices])
     #   return values
+
+
+    def heavyEdgeReduction(self):
+
+        (x, y) = np.where(np.triu(self.graph.adjacency_matrix.numpy()))
+
+        while(True):
+            tmpGraph = Graph()
+            for i in range(self.graph.n_nodes):
+                tmpGraph.add_node(Node(i))
+            for i in range(x.shape[0]):
+                tmpGraph.add_edge(x[i], y[i])
+
+            counter = 0;
+            while ((self.graph.n_nodes-counter > self.n_supernodes) and (len(x)-counter >= 0)):
+                u_id = np.random.choice(tmpGraph.get_nodes())
+                v_id = tmpGraph.get_heavy_edge(u_id)
+                tmpGraph.join_nodes(u_id, v_id)
+                counter+=1
+
+            mapping = tmpGraph.get_mapping()
+            edge_index = self.mappingToAdjacencyMatrix(mapping)
+            if np.sum(edge_index) != 0:
+                break
+
+        self.mapping = mapping
+        self.edge_index = edge_index
+
 
     def computeProjection(self):
       '''ex metodo'''
@@ -72,27 +105,35 @@ class reducedGraph():
           for i in range(nodes_cluster.shape[0]):
               mapping[nodes_cluster[i]].append(i)
 
-          edge_index = np.zeros((self.n_supernodes, self.n_supernodes))
-          for i in range(self.n_supernodes):
-              for j in range(i, self.n_supernodes):
-                  found = False
-                  if(i != j and not found):
-                      for l in mapping[i]:
-                          for p in mapping[j]:
-                              if(self.graph.adjacency_matrix[l,p]!=0):
-                                  edge_index[i,j] = 1
-                                  self.edges.append((i,j))
-                                  edge_index[j,i] = 1
-                                  self.n_edges += 1
-                                  found = True
-                                  break
-                          if(found): break
+
+          edge_index = self.mappingToAdjacencyMatrix(mapping)
           if np.sum(edge_index) != 0:
               break
+
           counter +=1
+
       self.adjacency_matrix = torch.tensor(edge_index)
       self.mapping = mapping
 
+    def mappingToAdjacencyMatrix(self, mapping):
+        self.edges = []
+        self.n_edges = 0
+        edge_index = np.zeros((self.n_supernodes, self.n_supernodes))
+        for i in range(self.n_supernodes):
+            for j in range(i, self.n_supernodes):
+                found = False
+                if(i != j and not found):
+                    for l in mapping[i]:
+                        for p in mapping[j]:
+                            if(self.graph.adjacency_matrix[l,p]!=0):
+                                edge_index[i,j] = 1
+                                self.edges.append((i,j))
+                                edge_index[j,i] = 1
+                                self.n_edges += 1
+                                found = True
+                                break
+                        if(found): break
+        return edge_index
 
     def customReduction(self):
       self.adjacency_matrix = torch.tensor([[0,1,1,1],[1,0,0,1],[1,0,0,0],[1,1,0,0]])

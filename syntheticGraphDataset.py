@@ -227,7 +227,7 @@ class syntheticGraphDataset():
     gamma_prime = torch.diag(torch.pow(torch.diag(reducedGraph.Gamma), -0.5))
     l_hat = gamma_prime @ (d_hat - w_hat) @ gamma_prime
     self.eigenvalues = syntheticGraphDataset.eigen_analysis(l_hat)
-    
+
     eigenerror = 0
     for i in range(n_eig):
       eigenerror += (abs(self.eigenvalues[i] - graph.eigenvalues[i]) / graph.eigenvalues[i])
@@ -266,7 +266,7 @@ class syntheticGraphDataset():
     graph = self.graphs[graphIndex]
 
     d_hat = torch.diag(torch.sum(w_hat, axis = 1))
-    L_hat = d_hat - w_hat 
+    L_hat = d_hat - w_hat
     P_eig = reducedGraph.P @ graph.eigenvectors
 
     loss = 0
@@ -288,10 +288,10 @@ class syntheticGraphDataset():
      data = cPickle.load(data)
      return data
 
-  def import_dataset(file):
+  def import_dataset(file, verbose=False):
     #TRAINING SET
     start = time.time()
-    print("Loading the compressed set...")
+    if (verbose): print("Loading the compressed set...")
     training_set = syntheticGraphDataset.decompress_pickle(file)
-    print("Dataset loaded in ", time.time()-start, "seconds\n")
+    if (verbose): print("Dataset loaded in ", time.time()-start, "seconds\n")
     return training_set
