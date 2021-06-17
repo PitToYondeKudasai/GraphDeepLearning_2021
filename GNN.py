@@ -24,16 +24,24 @@ from GINConv import GINConv
 
 
 class GNN(torch.nn.Module):
-    def __init__(self, node_size, n_layers):
-         super().__init__()
-         self.linear_edges = torch.nn.Linear(1, node_size)
-         self.linear_nodes = torch.nn.Linear(5, node_size)
+    def __init__(self, node_size, n_layers, lr, pathname = None):
+        super().__init__()
+        self.linear_edges = torch.nn.Linear(1, node_size)
+        self.linear_nodes = torch.nn.Linear(5, node_size)
 
-         self.convs = torch.nn.ModuleList()
-         for _ in range(n_layers):
-                 self.convs.append(GINConv(node_size))
-         self.linear = torch.nn.Linear(node_size, 1)
-         self.leak_relu = torch.nn.LeakyReLU()
+        self.convs = torch.nn.ModuleList()
+        for _ in range(n_layers):
+            self.convs.append(GINConv(node_size))
+        self.linear = torch.nn.Linear(node_size, 1)
+        self.leak_relu = torch.nn.LeakyReLU()
+
+        if(pathname != None):
+            model.load_state_dict(torch.load(pathname))
+
+        self.optimizer = torch.optim.Adam(self.parameters(), lr = lr)
+
+    def export(self, pathname):
+        torch.save(self.state_dict(), pathname)
 
     def forward(self, A, X, E):
 
@@ -45,6 +53,11 @@ class GNN(torch.nn.Module):
          X = self.linear(X.mean(axis = 1))
          X = 1 + self.leak_relu(X) #torch.nn.functional.relu(X)
          return X
+
+    def backpropagate(self, loss):
+        loss.backward()
+        self.optimizer.step()
+        self.optimizer.zero_grad()
 
     def evaluateRayleighLoss(self, dataset, hyperparams, verbose=False):
         if verbose: print("Rayleigh evaluation started..")
@@ -62,7 +75,7 @@ class GNN(torch.nn.Module):
               dataset.store_w_hat(graph, out, x, y)
             loss = dataset.rayleigh_loss(graph, hyperparams['n_eig'])
             imp = (dataset.originalGraphsRayLeighLoss[graph] - loss)/dataset.originalGraphsRayLeighLoss[graph]
-            improvements.append(imp)
+            improvements.append(imp.item())
             if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
         return improvements
 
@@ -82,6 +95,6 @@ class GNN(torch.nn.Module):
             dataset.store_w_hat(graph, out, x, y)
           eigenerror = dataset.eigenError(graph, hyperparams['n_eig'])
           imp = (dataset.originalEigenError[graph] - eigenerror)/dataset.originalEigenError[graph]
-          improvements.append(imp)
+          improvements.append(imp.item())
           if verbose: print("--- relative improvement percentage ", imp.item()*100, "%")
       return improvements
